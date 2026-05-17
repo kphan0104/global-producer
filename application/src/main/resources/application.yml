@@ -1,0 +1,17 @@
+app:
+  data-directory: ./data
+
+spring:
+  application:
+    name: global-producer
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      client-id: global-producer
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+logging:
+  level:
+    com.global.producer: INFO

@@ -1,0 +1,16 @@
+topic: demo.flow1
+
+schedule:
+  duration: 10s
+
+timestamp:
+  format: "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"
+  timezone: UTC
+  locale: en
+
+variables:
+  ENV:
+    choice: ["DEV", "QA", "PROD"]
+  EVENT_ID:
+    pattern: "[A-Z]{3}[0-9]{5}"
+

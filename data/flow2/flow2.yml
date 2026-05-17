@@ -1,0 +1,16 @@
+topic: demo.flow2
+
+schedule:
+  cron: "0 */1 * * * *"
+
+timestamp:
+  format: "EEE MMM d HH:mm:ss yyyy"
+  timezone: Europe/Paris
+  locale: en
+
+variables:
+  REGION:
+    choice: ["PARIS", "ALGIERS"]
+  TRACE_ID:
+    pattern: "[A-F0-9]{16}"
+
