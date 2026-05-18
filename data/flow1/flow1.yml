@@ -4,13 +4,16 @@ schedule:
   duration: 10s
 
 timestamp:
-  format: "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'"
-  timezone: UTC
-  locale: en
+  event_time:
+    format: NOW
+    locale: en
+  paris_time:
+    format: "yyyy-MM-dd HH:mm:ss.SSS"
+    timezone: Europe/Paris
+    locale: fr
 
 variables:
   ENV:
     choice: ["DEV", "QA", "PROD"]
   EVENT_ID:
     pattern: "[A-Z]{3}[0-9]{5}"
-

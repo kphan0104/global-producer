@@ -2,15 +2,20 @@ topic: demo.flow2
 
 schedule:
   cron: "0 */1 * * * *"
+  timezone: Europe/Paris
 
 timestamp:
-  format: "EEE MMM d HH:mm:ss yyyy"
-  timezone: Europe/Paris
-  locale: en
+  syslog_time:
+    format: "EEE MMM d HH:mm:ss yyyy"
+    timezone: Europe/Paris
+    locale: en
+  producer_offset:
+    format: ISO_OFFSET_DATE_TIME
+    timezone: "+02:00"
+    locale: en
 
 variables:
   REGION:
     choice: ["PARIS", "ALGIERS"]
   TRACE_ID:
     pattern: "[A-F0-9]{16}"
-
