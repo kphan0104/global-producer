@@ -31,6 +31,7 @@ public class LaunchService {
 
     private final FlowLoaderService flowLoaderService;
     private final TemplateRendererService templateRendererService;
+    private final DatabusPayloadService databusPayloadService;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final Clock clock;
     private final TaskSchedulingService taskSchedulingService;
@@ -45,12 +46,14 @@ public class LaunchService {
     public LaunchService(
             FlowLoaderService flowLoaderService,
             TemplateRendererService templateRendererService,
+            DatabusPayloadService databusPayloadService,
             KafkaTemplate<String, String> kafkaTemplate,
             Clock clock,
             TaskSchedulingService taskSchedulingService,
             AppProperties appProperties) {
         this.flowLoaderService = flowLoaderService;
         this.templateRendererService = templateRendererService;
+        this.databusPayloadService = databusPayloadService;
         this.kafkaTemplate = kafkaTemplate;
         this.clock = clock;
         this.taskSchedulingService = taskSchedulingService;
@@ -90,6 +93,7 @@ public class LaunchService {
             TaskDefinitionBean taskDefinitionBean = new TaskDefinitionBean(
                     flowDefinition,
                     templateRendererService,
+                    databusPayloadService,
                     kafkaTemplate,
                     clock);
 

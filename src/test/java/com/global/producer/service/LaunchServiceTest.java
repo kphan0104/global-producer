@@ -60,6 +60,7 @@ class LaunchServiceTest {
         LaunchService service = new LaunchService(
                 flowLoaderService,
                 templateRendererService,
+                databusPayloadService(),
                 kafkaTemplate,
                 Clock.system(ZoneOffset.UTC),
                 taskSchedulingService,
@@ -104,6 +105,7 @@ class LaunchServiceTest {
         LaunchService service = new LaunchService(
                 flowLoaderService,
                 templateRendererService,
+                databusPayloadService(),
                 kafkaTemplate,
                 Clock.systemUTC(),
                 taskSchedulingService,
@@ -157,6 +159,7 @@ class LaunchServiceTest {
         LaunchService service = new LaunchService(
                 flowLoaderService,
                 templateRendererService,
+                databusPayloadService(),
                 kafkaTemplate,
                 Clock.systemUTC(),
                 taskSchedulingService,
@@ -192,6 +195,7 @@ class LaunchServiceTest {
         LaunchService service = new LaunchService(
                 flowLoaderService,
                 templateRendererService,
+                databusPayloadService(),
                 kafkaTemplate,
                 Clock.systemUTC(),
                 taskSchedulingService,
@@ -209,5 +213,9 @@ class LaunchServiceTest {
         AppProperties appProperties = new AppProperties();
         appProperties.setDataDirectory(dataDirectory);
         return appProperties;
+    }
+
+    private DatabusPayloadService databusPayloadService() {
+        return new DatabusPayloadService(new com.fasterxml.jackson.databind.ObjectMapper(), new AppProperties());
     }
 }

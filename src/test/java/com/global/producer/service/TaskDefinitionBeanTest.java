@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.global.producer.model.FlowDefinition;
+import com.global.producer.property.AppProperties;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -36,7 +37,7 @@ class TaskDefinitionBeanTest {
     @Test
     void runShouldRenderPayloadAndSendTimestampedKafkaRecord() throws Exception {
         Path messageFile = tempDir.resolve("message.msg");
-        Files.writeString(messageFile, "time=${TIMESTAMP:event_time}|env=${ENV}");
+        Files.writeString(messageFile, "time=${TIMESTAMP}|env=${ENV}");
 
         FlowDefinition flowDefinition = flowDefinition(
                 "flow-a",
@@ -63,6 +64,7 @@ class TaskDefinitionBeanTest {
         TaskDefinitionBean taskDefinitionBean = new TaskDefinitionBean(
                 flowDefinition,
                 new TemplateRendererService(new SimplePatternGenerator()),
+                databusPayloadService(),
                 kafkaTemplate,
                 Clock.fixed(Instant.parse("2026-05-15T21:41:32Z"), ZoneOffset.UTC));
 
@@ -76,7 +78,12 @@ class TaskDefinitionBeanTest {
         assertThat(record.topic()).isEqualTo("topic-a");
         assertThat(record.key()).isNull();
         assertThat(record.timestamp()).isEqualTo(Instant.parse("2026-05-15T21:41:32Z").toEpochMilli());
-        assertThat(record.value()).isEqualTo("time=2026-05-15 21:41:32|env=QA");
+        assertThat(record.value()).isEqualTo(
+                "{\"databus.flow.name\":\"flow-a\","
+                        + "\"databus.flow.provider.name\":\"integration-tests\","
+                        + "\"originalMessage\":\"time=2026-05-15 21:41:32|env=QA\","
+                        + "\"databus.event.lineage.stage1.timestamp\":\"2026-05-15T21:41:32Z\","
+                        + "\"databus.event.lineage.stage1.pipeline_id\":\"global_producer\"}");
     }
 
     @Test
@@ -95,6 +102,7 @@ class TaskDefinitionBeanTest {
         TaskDefinitionBean taskDefinitionBean = new TaskDefinitionBean(
                 flowDefinition,
                 new TemplateRendererService(new SimplePatternGenerator()),
+                databusPayloadService(),
                 kafkaTemplate,
                 Clock.fixed(Instant.parse("2026-05-15T21:41:32Z"), ZoneOffset.UTC));
 
@@ -106,7 +114,7 @@ class TaskDefinitionBeanTest {
     @Test
     void runShouldNotThrowWhenKafkaSendCompletesExceptionally() throws Exception {
         Path messageFile = tempDir.resolve("message.msg");
-        Files.writeString(messageFile, "time=${TIMESTAMP:event_time}|env=${ENV}");
+        Files.writeString(messageFile, "time=${TIMESTAMP}|env=${ENV}");
 
         FlowDefinition flowDefinition = flowDefinition(
                 "flow-a",
@@ -124,10 +132,17 @@ class TaskDefinitionBeanTest {
         TaskDefinitionBean taskDefinitionBean = new TaskDefinitionBean(
                 flowDefinition,
                 new TemplateRendererService(new SimplePatternGenerator()),
+                databusPayloadService(),
                 kafkaTemplate,
                 Clock.fixed(Instant.parse("2026-05-15T21:41:32Z"), ZoneOffset.UTC));
 
         assertThatCode(taskDefinitionBean::run).doesNotThrowAnyException();
         verify(kafkaTemplate).send(any(ProducerRecord.class));
+    }
+
+    private DatabusPayloadService databusPayloadService() {
+        AppProperties appProperties = new AppProperties();
+        appProperties.getDatabus().getFlow().getProvider().setName("integration-tests");
+        return new DatabusPayloadService(new com.fasterxml.jackson.databind.ObjectMapper(), appProperties);
     }
 }

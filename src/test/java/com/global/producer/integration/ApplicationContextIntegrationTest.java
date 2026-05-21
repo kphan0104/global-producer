@@ -51,7 +51,7 @@ class ApplicationContextIntegrationTest {
                   ENV:
                     choice: ["CTX"]
                 """);
-        Files.writeString(flowDirectory.resolve("message.msg"), "context=${ENV}, ts=${TIMESTAMP:event_time}");
+        Files.writeString(flowDirectory.resolve("message.msg"), "context=${ENV}, ts=${TIMESTAMP}");
     }
 
     @Autowired

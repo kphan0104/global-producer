@@ -1,5 +1,7 @@
 package com.global.producer.configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Clock;
@@ -15,6 +17,13 @@ public class MainConfiguration {
     }
 
     @Bean
+    public ObjectMapper objectMapper() {
+        return JsonMapper.builder()
+                .findAndAddModules()
+                .build();
+    }
+
+    @Bean
     public String localHostName() {
         try {
             return InetAddress.getLocalHost().getHostName();
@@ -23,4 +32,3 @@ public class MainConfiguration {
         }
     }
 }
-

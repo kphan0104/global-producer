@@ -145,6 +145,6 @@ class FlowLoaderServiceTest {
                   ENV:
                     choice: ["DEV"]
                 """.formatted(topic));
-        Files.writeString(flowDirectory.resolve("message.msg"), "value=${TIMESTAMP:event_time}-${ENV}");
+        Files.writeString(flowDirectory.resolve("message.msg"), "value=${TIMESTAMP}-${ENV}");
     }
 }

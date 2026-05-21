@@ -158,10 +158,15 @@ public class TemplateRendererService {
             Map<String, DateTimeFormatter> timestampFormatters) {
         if (TIMESTAMP_PLACEHOLDER.equals(placeholder)) {
             if (!StringUtils.hasText(timestampProfile)) {
+                if (timestampFormatters.size() == 1) {
+                    String singleProfileName = timestampFormatters.keySet().iterator().next();
+                    return new TimestampPlaceholderPart(singleProfileName, timestampFormatters.get(singleProfileName));
+                }
+
                 throw new IllegalArgumentException(
                         "Flow " + flowDefinition.getName()
                                 + " uses ${TIMESTAMP} in " + messageFile.getFileName()
-                                + " without a timestamp profile; use ${TIMESTAMP:<profile>}");
+                                + " but defines multiple timestamp profiles; use ${TIMESTAMP:<profile>}");
             }
 
             DateTimeFormatter formatter = timestampFormatters.get(timestampProfile);

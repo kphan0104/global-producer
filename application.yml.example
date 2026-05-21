@@ -1,5 +1,9 @@
 app:
   data-directory: ./data
+  databus:
+    flow:
+      provider:
+        name: integration-tests
 
 spring:
   application:

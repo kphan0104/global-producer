@@ -4,8 +4,8 @@
 
 - load flows from an external `data/` directory
 - choose a random `.msg` template for each flow on every execution
-- render variables and named timestamp profiles
-- publish the rendered payload to Kafka
+- render variables and timestamp profiles
+- publish a Databus JSON envelope to Kafka
 - expose a REST API to publish an arbitrary `topic` / `key` / `value` payload to Kafka
 
 ## Requirements
@@ -14,11 +14,7 @@
 - Maven `3.9+`
 - Kafka broker reachable by the app
 
-Default Kafka bootstrap server:
-
-```yaml
-spring.kafka.bootstrap-servers: localhost:9092
-```
+Runtime configuration is intentionally external to the jar.
 
 ## Run
 
@@ -33,6 +29,32 @@ Or build the jar:
 ```bash
 mvn clean package
 java -jar target/global-producer-1.0.0-SNAPSHOT.jar
+```
+
+## External application.yml
+
+The project no longer packages an `application.yml` inside the jar.
+
+Provide your runtime configuration next to the jar, for example:
+
+```text
+global-producer-1.0.0-SNAPSHOT.jar
+application.yml
+data/
+```
+
+An example file is available in the repository at [application.yml.example](/Users/kph/Documents/global-producer/application.yml.example).
+
+Spring Boot will also accept:
+
+```text
+config/application.yml
+```
+
+Typical startup:
+
+```bash
+java -jar global-producer-1.0.0-SNAPSHOT.jar
 ```
 
 ## External data directory
@@ -147,7 +169,13 @@ Rules:
 
 `timestamp` is a map of named timestamp profiles.
 
-Each profile name can be referenced inside `.msg` files with:
+If a flow defines a single timestamp profile, you can reference it directly inside `.msg` files with:
+
+```text
+${TIMESTAMP}
+```
+
+If a flow defines multiple timestamp profiles, reference them with:
 
 ```text
 ${TIMESTAMP:profile_name}
@@ -156,6 +184,7 @@ ${TIMESTAMP:profile_name}
 Examples:
 
 ```text
+${TIMESTAMP}
 ${TIMESTAMP:event_time}
 ${TIMESTAMP:producer_offset}
 ${TIMESTAMP:paris_sql}
@@ -163,7 +192,8 @@ ${TIMESTAMP:paris_sql}
 
 Rules:
 
-- `${TIMESTAMP}` alone is not allowed
+- `${TIMESTAMP}` is allowed only when the flow defines exactly one timestamp profile
+- if the flow defines multiple timestamp profiles, `${TIMESTAMP:profile_name}` is required
 - only `TIMESTAMP` supports the `:profile_name` suffix
 - variables like `${ENV}` and `${TRACE_ID}` keep their normal syntax
 - the same `Instant` is reused for all timestamp placeholders rendered in the same message
@@ -319,7 +349,7 @@ Not supported:
 ```json
 {
   "flow": "flow1",
-  "eventTime": "${TIMESTAMP:event_time}",
+  "eventTime": "${TIMESTAMP}",
   "localParisTime": "${TIMESTAMP:paris_sql}",
   "environment": "${ENV}",
   "eventId": "${EVENT_ID}"
@@ -338,12 +368,40 @@ For each loaded flow:
 
 The app also watches the `data/` directory and reloads flows when `.msg`, `.yml`, or `.yaml` files change.
 
+Before publishing to Kafka, each rendered flow message is wrapped in a JSON envelope with these fields:
+
+```json
+{
+  "databus.flow.name": "flow1",
+  "databus.flow.provider.name": "integration-tests",
+  "originalMessage": "{\"eventTime\":\"2026-05-15T21:41:32.866215Z\"}",
+  "databus.event.lineage.stage1.timestamp": "2026-05-15T21:41:32.866215Z",
+  "databus.event.lineage.stage1.pipeline_id": "global_producer"
+}
+```
+
+Field behavior:
+
+- `databus.flow.name`: the flow folder name
+- `databus.flow.provider.name`: configured from `app.databus.flow.provider.name`
+- `originalMessage`: the fully rendered `.msg` content that used to be published directly
+- `databus.event.lineage.stage1.timestamp`: the current production instant as an ISO-8601 UTC string
+- `databus.event.lineage.stage1.pipeline_id`: fixed to `global_producer`
+
 ## REST API
 
 The application exposes:
 
 ```text
 POST /api/messages
+```
+
+Swagger / OpenAPI endpoints:
+
+```text
+GET /swagger-ui.html
+GET /v3/api-docs
+GET /v3/api-docs.yaml
 ```
 
 Request body:
@@ -384,7 +442,7 @@ A flow is rejected if:
 - both `.yml` and `.yaml` exist at the same time
 - both `schedule.duration` and `schedule.cron` are defined
 - neither `schedule.duration` nor `schedule.cron` is defined
-- `${TIMESTAMP}` is used without a profile name
+- `${TIMESTAMP}` is used without a profile name in a flow that defines multiple timestamp profiles
 - a timestamp profile is referenced but not declared
 - a variable placeholder is referenced but not declared
 - a variable defines both `choice` and `pattern`

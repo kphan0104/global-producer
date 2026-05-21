@@ -9,6 +9,7 @@ import static com.global.producer.support.FlowDefinitionTestFactory.timestamp;
 import static com.global.producer.support.FlowDefinitionTestFactory.timestampProfile;
 import static com.global.producer.support.FlowDefinitionTestFactory.timestampProfiles;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.global.producer.model.FlowDefinition;
@@ -106,7 +107,7 @@ class TemplateRendererServiceTest {
     @Test
     void renderShouldCompileLazilyWithoutExplicitValidation() throws Exception {
         Path messageFile = tempDir.resolve("lazy.msg");
-        Files.writeString(messageFile, "plain-${TIMESTAMP:event_time}");
+        Files.writeString(messageFile, "plain-${TIMESTAMP}");
 
         FlowDefinition flowDefinition = flowDefinition(
                 "flow-lazy",
@@ -143,21 +144,40 @@ class TemplateRendererServiceTest {
     }
 
     @Test
-    void validateFlowDefinitionShouldRejectBareTimestampPlaceholder() throws Exception {
+    void validateFlowDefinitionShouldAcceptBareTimestampPlaceholderWhenFlowHasSingleTimestampProfile() throws Exception {
         Path messageFile = tempDir.resolve("bare-timestamp.msg");
+        Files.writeString(messageFile, "value=${TIMESTAMP}");
+
+        FlowDefinition flowDefinition = flowDefinition(
+                "flow-valid",
+                "topic-valid",
+                durationSchedule("10s"),
+                singleTimestampProfile("event_time", timestamp("NOW", null, "en")),
+                Map.of(),
+                java.util.List.of(messageFile));
+
+        assertThatCode(() -> templateRendererService.validateFlowDefinition(flowDefinition))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void validateFlowDefinitionShouldRejectBareTimestampPlaceholderWhenFlowHasMultipleTimestampProfiles() throws Exception {
+        Path messageFile = tempDir.resolve("bare-timestamp-multi.msg");
         Files.writeString(messageFile, "value=${TIMESTAMP}");
 
         FlowDefinition flowDefinition = flowDefinition(
                 "flow-invalid",
                 "topic-invalid",
                 durationSchedule("10s"),
-                singleTimestampProfile("event_time", timestamp("NOW", null, "en")),
+                timestampProfiles(
+                        timestampProfile("event_time", timestamp("NOW", null, "en")),
+                        timestampProfile("local_time", timestamp("yyyy-MM-dd HH:mm:ss", "Europe/Paris", "fr"))),
                 Map.of(),
                 java.util.List.of(messageFile));
 
         assertThatThrownBy(() -> templateRendererService.validateFlowDefinition(flowDefinition))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("without a timestamp profile");
+                .hasMessageContaining("defines multiple timestamp profiles");
     }
 
     @Test

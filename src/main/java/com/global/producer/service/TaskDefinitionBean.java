@@ -15,6 +15,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 public record TaskDefinitionBean(
         FlowDefinition flowDefinition,
         TemplateRendererService templateRendererService,
+        DatabusPayloadService databusPayloadService,
         KafkaTemplate<String, String> kafkaTemplate,
         Clock clock) implements Runnable {
 
@@ -23,7 +24,8 @@ public record TaskDefinitionBean(
         Path messageFile = selectRandomMessageFile();
         Instant now = Instant.now(clock);
         try {
-            String payload = templateRendererService.render(flowDefinition, messageFile, now);
+            String originalMessage = templateRendererService.render(flowDefinition, messageFile, now);
+            String payload = databusPayloadService.wrap(flowDefinition, originalMessage, now);
             ProducerRecord<String, String> producerRecord =
                     new ProducerRecord<>(flowDefinition.getTopic(), null, now.toEpochMilli(), null, payload);
 

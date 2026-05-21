@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.global.producer.model.FlowDefinition;
 import com.global.producer.property.AppProperties;
+import com.global.producer.service.DatabusPayloadService;
 import com.global.producer.service.FlowLoaderService;
 import com.global.producer.service.SimplePatternGenerator;
 import com.global.producer.service.TaskDefinitionBean;
@@ -64,7 +65,7 @@ class FlowKafkaIntegrationTest {
                   ENV:
                     choice: ["INT"]
                 """);
-        Files.writeString(flowDirectory.resolve("message.msg"), "{\"ts\":\"${TIMESTAMP:event_time}\",\"env\":\"${ENV}\"}");
+        Files.writeString(flowDirectory.resolve("message.msg"), "{\"ts\":\"${TIMESTAMP}\",\"env\":\"${ENV}\"}");
 
         TemplateRendererService templateRendererService = new TemplateRendererService(new SimplePatternGenerator());
         AppProperties appProperties = new AppProperties();
@@ -87,6 +88,7 @@ class FlowKafkaIntegrationTest {
             TaskDefinitionBean taskDefinitionBean = new TaskDefinitionBean(
                     flowDefinition,
                     templateRendererService,
+                    new DatabusPayloadService(new com.fasterxml.jackson.databind.ObjectMapper(), appProperties),
                     kafkaTemplate,
                     Clock.fixed(Instant.parse("2026-05-15T21:41:32.866Z"), ZoneOffset.UTC));
 
@@ -99,7 +101,12 @@ class FlowKafkaIntegrationTest {
             ConsumerRecord<String, String> record = pollSingleRecord(consumer, Duration.ofSeconds(10));
             assertThat(record.topic()).isEqualTo("flow.integration");
             assertThat(record.timestamp()).isEqualTo(Instant.parse("2026-05-15T21:41:32.866Z").toEpochMilli());
-            assertThat(record.value()).isEqualTo("{\"ts\":\"2026-05-15T21:41:32.866Z\",\"env\":\"INT\"}");
+            assertThat(record.value()).isEqualTo(
+                    "{\"databus.flow.name\":\"flow-integration\","
+                            + "\"databus.flow.provider.name\":\"integration-tests\","
+                            + "\"originalMessage\":\"{\\\"ts\\\":\\\"2026-05-15T21:41:32.866Z\\\",\\\"env\\\":\\\"INT\\\"}\","
+                            + "\"databus.event.lineage.stage1.timestamp\":\"2026-05-15T21:41:32.866Z\","
+                            + "\"databus.event.lineage.stage1.pipeline_id\":\"global_producer\"}");
         } finally {
             producerFactory.destroy();
         }
