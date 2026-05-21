@@ -76,6 +76,19 @@ class FlowDefinitionValidatorTest {
     }
 
     @Test
+    void validateShouldRejectCronWithoutScheduleTimezoneWhenSingleTimestampProfileUsesNow() {
+        assertThatThrownBy(() -> FlowDefinitionValidator.validate(flowDefinition(
+                "flow-invalid",
+                "topic-invalid",
+                cronSchedule("0 */1 * * * *"),
+                singleTimestampProfile("event_time", timestamp("NOW", "Europe/Paris", "en")),
+                Map.of(),
+                java.util.List.of(Path.of("sample.msg")))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("schedule.timezone");
+    }
+
+    @Test
     void validateShouldRejectReservedTimestampVariableName() {
         assertThatThrownBy(() -> FlowDefinitionValidator.validate(flowDefinition(
                 "flow-invalid",

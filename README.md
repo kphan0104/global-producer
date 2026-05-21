@@ -98,7 +98,7 @@ Rules:
 
 ## Flow configuration
 
-Example:
+Examples:
 
 ```yaml
 topic: demo.flow1
@@ -108,6 +108,29 @@ schedule:
   # or:
   # cron: "0 */1 * * * *"
   # timezone: Europe/Paris
+
+timestamp:
+  format: "yyyy-MM-dd HH:mm:ss.SSS"
+  timezone: Europe/Paris
+  locale: fr
+
+variables:
+  ENV:
+    choice: ["DEV", "QA", "PROD"]
+
+  EVENT_ID:
+    pattern: "[A-Z]{3}[0-9]{5}"
+```
+
+Single-profile flows can use the direct `timestamp.format/timezone/locale` form above.
+
+If a flow needs several timestamp formats, switch to named profiles:
+
+```yaml
+topic: demo.flow1
+
+schedule:
+  duration: 10s
 
 timestamp:
   event_time:
@@ -167,7 +190,26 @@ Rules:
 
 ## Timestamp profiles
 
-`timestamp` is a map of named timestamp profiles.
+`timestamp` supports two shapes:
+
+- single-profile flows:
+  ```yaml
+  timestamp:
+    format: "yyyy-MM-dd HH:mm:ss.SSS"
+    timezone: Europe/Paris
+    locale: fr
+  ```
+- multi-profile flows:
+  ```yaml
+  timestamp:
+    event_time:
+      format: NOW
+      locale: en
+    local_time:
+      format: "yyyy-MM-dd HH:mm:ss.SSS"
+      timezone: Europe/Paris
+      locale: fr
+  ```
 
 If a flow defines a single timestamp profile, you can reference it directly inside `.msg` files with:
 

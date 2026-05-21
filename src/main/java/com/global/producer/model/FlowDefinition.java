@@ -1,5 +1,6 @@
 package com.global.producer.model;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -12,10 +13,13 @@ import lombok.Setter;
 @Setter
 public class FlowDefinition {
 
+    public static final String DEFAULT_TIMESTAMP_PROFILE = "__default__";
+
     private String name;
     private Path directory;
     private String topic;
     private Schedule schedule;
+    @JsonDeserialize(using = TimestampDefinitionsDeserializer.class)
     private Map<String, TimestampDefinition> timestamp = new LinkedHashMap<>();
     private Map<String, VariableDefinition> variables = new LinkedHashMap<>();
     private List<Path> messageFiles = new ArrayList<>();

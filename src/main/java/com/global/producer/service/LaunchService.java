@@ -127,8 +127,9 @@ public class LaunchService {
             return flowDefinition.getSchedule().getTimezone();
         }
 
-        String inferredTimezone = flowDefinition.getTimestamp().values().iterator().next().getTimezone();
-        if (inferredTimezone == null) {
+        var onlyTimestampProfile = flowDefinition.getTimestamp().values().iterator().next();
+        String inferredTimezone = onlyTimestampProfile.getTimezone();
+        if ("NOW".equalsIgnoreCase(onlyTimestampProfile.getFormat()) || inferredTimezone == null) {
             throw new IllegalStateException(
                     "Unable to infer cron timezone for flow " + flowDefinition.getName() + "; configure schedule.timezone");
         }

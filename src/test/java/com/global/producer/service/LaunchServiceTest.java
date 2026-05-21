@@ -12,6 +12,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.global.producer.model.FlowDefinition;
 import com.global.producer.property.AppProperties;
@@ -76,6 +77,38 @@ class LaunchServiceTest {
                 any(TaskDefinitionBean.class),
                 eq("0 */1 * * * *"),
                 eq("Europe/Paris"));
+    }
+
+    @Test
+    void reloadFlowsShouldRejectCronTimezoneInferenceWhenOnlyTimestampProfileUsesNow() {
+        FlowLoaderService flowLoaderService = Mockito.mock(FlowLoaderService.class);
+        TaskSchedulingService taskSchedulingService = Mockito.mock(TaskSchedulingService.class);
+        TemplateRendererService templateRendererService = new TemplateRendererService(new SimplePatternGenerator());
+        @SuppressWarnings("unchecked")
+        KafkaTemplate<String, String> kafkaTemplate = Mockito.mock(KafkaTemplate.class);
+
+        FlowDefinition cronFlow = flowDefinition(
+                "flow-cron",
+                "topic-cron",
+                cronSchedule("0 */1 * * * *"),
+                singleTimestampProfile("event_time", timestamp("NOW", "Europe/Paris", "en")),
+                Map.of(),
+                List.of(java.nio.file.Path.of("cron.msg")));
+
+        when(flowLoaderService.getAllFlows()).thenReturn(List.of(cronFlow));
+
+        LaunchService service = new LaunchService(
+                flowLoaderService,
+                templateRendererService,
+                databusPayloadService(),
+                kafkaTemplate,
+                Clock.system(ZoneOffset.UTC),
+                taskSchedulingService,
+                appProperties(tempDir));
+
+        assertThatThrownBy(service::reloadFlows)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("configure schedule.timezone");
     }
 
     @Test

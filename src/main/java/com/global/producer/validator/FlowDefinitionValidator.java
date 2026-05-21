@@ -114,6 +114,7 @@ public class FlowDefinitionValidator {
         }
 
         TimestampDefinition onlyTimestampProfile = flowDefinition.getTimestamp().values().iterator().next();
-        return StringUtils.hasText(onlyTimestampProfile.getTimezone());
+        return !"NOW".equalsIgnoreCase(onlyTimestampProfile.getFormat())
+                && StringUtils.hasText(onlyTimestampProfile.getTimezone());
     }
 }
